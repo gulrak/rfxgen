@@ -87,6 +87,7 @@
 #define TOOL_LOGO_COLOR         0x5197d4ff
 
 #include "raylib.h"
+#include "random.h"
 
 #if defined(PLATFORM_WEB)
     #define CUSTOM_MODAL_DIALOGS        // Force custom modal dialogs usage
@@ -144,7 +145,7 @@ bool __stdcall FreeConsole(void);       // Close console from code (kernel32.lib
 #define MAX_WAVE_SLOTS       4          // Number of wave slots for generation
 
 // Float random number generation
-#define frnd(range) ((float)GetRandomValue(0, 10000)/10000.0f*range)
+#define frnd(range) ((float)RFXGetRandomValue(0, 10000)/10000.0f*range)
 
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
@@ -233,6 +234,7 @@ static WaveParams GenRandomize(void);       // Generate random sound
 static void WaveMutate(WaveParams *params); // Mutate current sound
 
 // Auxiliar functions
+static int RFXGetRandomValue(int min, int max); // Generate ranrom number in range [min, max]
 static void DrawWave(Wave *wave, Rectangle bounds, Color color);    // Draw wave data using lines
 
 #if defined(VERSION_ONE)
@@ -1068,8 +1070,8 @@ static void ProcessCommandLine(int argc, char *argv[])
 static void ResetWaveParams(WaveParams *params)
 {
     // NOTE: Random seed is set to a random value
-    params->randSeed = GetRandomValue(0x1, 0xFFFE);
-    srand(params->randSeed);
+    params->randSeed = RFXGetRandomValue(0x1, 0xFFFE);
+    seedRandom(params->randSeed);
 
     // Wave type
     params->waveTypeValue = 0;
@@ -1119,10 +1121,10 @@ static Wave GenerateWave(WaveParams params)
     #define MAX_WAVE_LENGTH_SECONDS  10     // Max length for wave: 10 seconds
     #define WAVE_SAMPLE_RATE      44100     // Default sample rate
 
-    #define rnd(n) (rand()%(n + 1))
+    #define rnd(n) (nextRandom()%(n + 1))
     #define GetRandomFloat(range) ((float)rnd(10000)/10000*range)
 
-    if (params.randSeed != 0) srand(params.randSeed);   // Initialize seed if required
+    if (params.randSeed != 0) seedRandom(params.randSeed);   // Initialize seed if required
 
     // Configuration parameters for generation
     // NOTE: Those parameters are calculated from selected values
@@ -1572,7 +1574,7 @@ static WaveParams GenPickupCoin(void)
     params.decayTimeValue = 0.1f + frnd(0.4f);
     params.sustainPunchValue = 0.3f + frnd(0.3f);
 
-    if (GetRandomValue(0, 1))
+    if (RFXGetRandomValue(0, 1))
     {
         params.changeSpeedValue = 0.5f + frnd(0.2f);
         params.changeAmountValue = 0.2f + frnd(0.4f);
@@ -1587,9 +1589,9 @@ static WaveParams GenLaserShoot(void)
     WaveParams params = { 0 };
     ResetWaveParams(&params);
 
-    params.waveTypeValue = GetRandomValue(0, 2);
+    params.waveTypeValue = RFXGetRandomValue(0, 2);
 
-    if ((params.waveTypeValue == 2) && GetRandomValue(0, 1)) params.waveTypeValue = GetRandomValue(0, 1);
+    if ((params.waveTypeValue == 2) && RFXGetRandomValue(0, 1)) params.waveTypeValue = RFXGetRandomValue(0, 1);
 
     params.startFrequencyValue = 0.5f + frnd(0.5f);
     params.minFrequencyValue = params.startFrequencyValue - 0.2f - frnd(0.6f);
@@ -1598,14 +1600,14 @@ static WaveParams GenLaserShoot(void)
 
     params.slideValue = -0.15f - frnd(0.2f);
 
-    if (GetRandomValue(0, 2) == 0)
+    if (RFXGetRandomValue(0, 2) == 0)
     {
         params.startFrequencyValue = 0.3f + frnd(0.6f);
         params.minFrequencyValue = frnd(0.1f);
         params.slideValue = -0.35f - frnd(0.3f);
     }
 
-    if (GetRandomValue(0, 1))
+    if (RFXGetRandomValue(0, 1))
     {
         params.squareDutyValue = frnd(0.5f);
         params.dutySweepValue = frnd(0.2f);
@@ -1620,15 +1622,15 @@ static WaveParams GenLaserShoot(void)
     params.sustainTimeValue = 0.1f + frnd(0.2f);
     params.decayTimeValue = frnd(0.4f);
 
-    if (GetRandomValue(0, 1)) params.sustainPunchValue = frnd(0.3f);
+    if (RFXGetRandomValue(0, 1)) params.sustainPunchValue = frnd(0.3f);
 
-    if (GetRandomValue(0, 2) == 0)
+    if (RFXGetRandomValue(0, 2) == 0)
     {
         params.phaserOffsetValue = frnd(0.2f);
         params.phaserSweepValue = -frnd(0.2f);
     }
 
-    if (GetRandomValue(0, 1)) params.hpfCutoffValue = frnd(0.3f);
+    if (RFXGetRandomValue(0, 1)) params.hpfCutoffValue = frnd(0.3f);
 
     return params;
 }
@@ -1641,7 +1643,7 @@ static WaveParams GenExplosion(void)
 
     params.waveTypeValue = 3;
 
-    if (GetRandomValue(0, 1))
+    if (RFXGetRandomValue(0, 1))
     {
         params.startFrequencyValue = 0.1f + frnd(0.4f);
         params.slideValue = -0.1f + frnd(0.4f);
@@ -1654,14 +1656,14 @@ static WaveParams GenExplosion(void)
 
     params.startFrequencyValue *= params.startFrequencyValue;
 
-    if (GetRandomValue(0, 4) == 0) params.slideValue = 0.0f;
-    if (GetRandomValue(0, 2) == 0) params.repeatSpeedValue = 0.3f + frnd(0.5f);
+    if (RFXGetRandomValue(0, 4) == 0) params.slideValue = 0.0f;
+    if (RFXGetRandomValue(0, 2) == 0) params.repeatSpeedValue = 0.3f + frnd(0.5f);
 
     params.attackTimeValue = 0.0f;
     params.sustainTimeValue = 0.1f + frnd(0.3f);
     params.decayTimeValue = frnd(0.5f);
 
-    if (GetRandomValue(0, 1) == 0)
+    if (RFXGetRandomValue(0, 1) == 0)
     {
         params.phaserOffsetValue = -0.3f + frnd(0.9f);
         params.phaserSweepValue = -frnd(0.3f);
@@ -1669,13 +1671,13 @@ static WaveParams GenExplosion(void)
 
     params.sustainPunchValue = 0.2f + frnd(0.6f);
 
-    if (GetRandomValue(0, 1))
+    if (RFXGetRandomValue(0, 1))
     {
         params.vibratoDepthValue = frnd(0.7f);
         params.vibratoSpeedValue = frnd(0.6f);
     }
 
-    if (GetRandomValue(0, 2) == 0)
+    if (RFXGetRandomValue(0, 2) == 0)
     {
         params.changeSpeedValue = 0.6f + frnd(0.3f);
         params.changeAmountValue = 0.8f - frnd(1.6f);
@@ -1690,10 +1692,10 @@ static WaveParams GenPowerup(void)
     WaveParams params = { 0 };
     ResetWaveParams(&params);
 
-    if (GetRandomValue(0, 1)) params.waveTypeValue = 1;
+    if (RFXGetRandomValue(0, 1)) params.waveTypeValue = 1;
     else params.squareDutyValue = frnd(0.6f);
 
-    if (GetRandomValue(0, 1))
+    if (RFXGetRandomValue(0, 1))
     {
         params.startFrequencyValue = 0.2f + frnd(0.3f);
         params.slideValue = 0.1f + frnd(0.4f);
@@ -1704,7 +1706,7 @@ static WaveParams GenPowerup(void)
         params.startFrequencyValue = 0.2f + frnd(0.3f);
         params.slideValue = 0.05f + frnd(0.2f);
 
-        if (GetRandomValue(0, 1))
+        if (RFXGetRandomValue(0, 1))
         {
             params.vibratoDepthValue = frnd(0.7f);
             params.vibratoSpeedValue = frnd(0.6f);
@@ -1724,7 +1726,7 @@ static WaveParams GenHitHurt(void)
     WaveParams params = { 0 };
     ResetWaveParams(&params);
 
-    params.waveTypeValue = GetRandomValue(0, 2);
+    params.waveTypeValue = RFXGetRandomValue(0, 2);
     if (params.waveTypeValue == 2) params.waveTypeValue = 3;
     if (params.waveTypeValue == 0) params.squareDutyValue = frnd(0.6f);
 
@@ -1734,7 +1736,7 @@ static WaveParams GenHitHurt(void)
     params.sustainTimeValue = frnd(0.1f);
     params.decayTimeValue = 0.1f + frnd(0.2f);
 
-    if (GetRandomValue(0, 1)) params.hpfCutoffValue = frnd(0.3f);
+    if (RFXGetRandomValue(0, 1)) params.hpfCutoffValue = frnd(0.3f);
 
     return params;
 }
@@ -1753,8 +1755,8 @@ static WaveParams GenJump(void)
     params.sustainTimeValue = 0.1f + frnd(0.3f);
     params.decayTimeValue = 0.1f + frnd(0.2f);
 
-    if (GetRandomValue(0, 1)) params.hpfCutoffValue = frnd(0.3f);
-    if (GetRandomValue(0, 1)) params.lpfCutoffValue = 1.0f - frnd(0.6f);
+    if (RFXGetRandomValue(0, 1)) params.hpfCutoffValue = frnd(0.3f);
+    if (RFXGetRandomValue(0, 1)) params.lpfCutoffValue = 1.0f - frnd(0.6f);
 
     return params;
 }
@@ -1765,7 +1767,7 @@ static WaveParams GenBlipSelect(void)
     WaveParams params = { 0 };
     ResetWaveParams(&params);
 
-    params.waveTypeValue = GetRandomValue(0, 1);
+    params.waveTypeValue = RFXGetRandomValue(0, 1);
     if (params.waveTypeValue == 0) params.squareDutyValue = frnd(0.6f);
     params.startFrequencyValue = 0.2f + frnd(0.4f);
     params.attackTimeValue = 0.0f;
@@ -1782,11 +1784,11 @@ static WaveParams GenRandomize(void)
     WaveParams params = { 0 };
     ResetWaveParams(&params);
 
-    params.randSeed = GetRandomValue(0, 0xFFFE);
+    params.randSeed = RFXGetRandomValue(0, 0xFFFE);
 
     params.startFrequencyValue = powf(frnd(2.0f) - 1.0f, 2.0f);
 
-    if (GetRandomValue(0, 1)) params.startFrequencyValue = powf(frnd(2.0f) - 1.0f, 3.0f)+0.5f;
+    if (RFXGetRandomValue(0, 1)) params.startFrequencyValue = powf(frnd(2.0f) - 1.0f, 3.0f)+0.5f;
 
     params.minFrequencyValue = 0.0f;
     params.slideValue = powf(frnd(2.0f) - 1.0f, 5.0f);
@@ -1831,36 +1833,47 @@ static WaveParams GenRandomize(void)
 // Mutate current sound
 static void WaveMutate(WaveParams *params)
 {
-    srand(time(NULL));      // Refresh seed to avoid converging behaviour
+    seedRandom(time(NULL));      // Refresh seed to avoid converging behaviour
     
-    if (GetRandomValue(0, 1)) params->startFrequencyValue += frnd(0.1f) - 0.05f;        
-    //if (GetRandomValue(0, 1)) params.minFrequencyValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->slideValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->deltaSlideValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->squareDutyValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->dutySweepValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->vibratoDepthValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->vibratoSpeedValue += frnd(0.1f) - 0.05f;
-    //if (GetRandomValue(0, 1)) params.vibratoPhaseDelay += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->attackTimeValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->sustainTimeValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->decayTimeValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->sustainPunchValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->lpfResonanceValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->lpfCutoffValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->lpfCutoffSweepValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->hpfCutoffValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->hpfCutoffSweepValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->phaserOffsetValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->phaserSweepValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->repeatSpeedValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->changeSpeedValue += frnd(0.1f) - 0.05f;
-    if (GetRandomValue(0, 1)) params->changeAmountValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->startFrequencyValue += frnd(0.1f) - 0.05f;        
+    //if (RFXGetRandomValue(0, 1)) params.minFrequencyValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->slideValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->deltaSlideValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->squareDutyValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->dutySweepValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->vibratoDepthValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->vibratoSpeedValue += frnd(0.1f) - 0.05f;
+    //if (RFXGetRandomValue(0, 1)) params.vibratoPhaseDelay += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->attackTimeValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->sustainTimeValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->decayTimeValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->sustainPunchValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->lpfResonanceValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->lpfCutoffValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->lpfCutoffSweepValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->hpfCutoffValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->hpfCutoffSweepValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->phaserOffsetValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->phaserSweepValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->repeatSpeedValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->changeSpeedValue += frnd(0.1f) - 0.05f;
+    if (RFXGetRandomValue(0, 1)) params->changeAmountValue += frnd(0.1f) - 0.05f;
 }
 
 //--------------------------------------------------------------------------------------------
 // Auxiliar functions
 //--------------------------------------------------------------------------------------------
+
+static int RFXGetRandomValue(int min, int max)
+{
+    if (min > max) {
+        int tmp = max;
+        max = min;
+        min = tmp;
+    }
+    return ((int64_t)nextRandom() % (abs(max - min) + 1) + min);
+}
+
 // Draw wave data
 // NOTE: For proper visualization, MSAA x4 is recommended but it could be costly for the GPU
 // Alternative: Rendered to a bigger texture and scale down with bilinear/trilinear texture filtering
