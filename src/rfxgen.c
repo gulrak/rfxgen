@@ -234,6 +234,8 @@ static WaveParams GenRandomize(void);       // Generate random sound
 static void WaveMutate(WaveParams *params); // Mutate current sound
 
 // Auxiliar functions
+static void CopyWaveParams(WaveParams *params);
+static void PasteWaveParams(WaveParams *params);
 static int RFXGetRandomValue(int min, int max); // Generate ranrom number in range [min, max]
 static void DrawWave(Wave *wave, Rectangle bounds, Color color);    // Draw wave data using lines
 
@@ -430,6 +432,17 @@ int main(int argc, char *argv[])
         // Show dialog: export wave (.wav, .raw, .h)
         if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_E)) showExportFileDialog = true;
 
+        // Copy WaveParams into clipboard
+        if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_C)) {
+            CopyWaveParams(&params[slotActive]);
+        }
+
+        // Paste WaveParams into clipboard
+        if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_V)) {
+            PasteWaveParams(&params[slotActive]);
+            regenerate = true;
+        }
+
         // Toggle window about
         if (IsKeyPressed(KEY_F1)) windowAboutState.windowActive = !windowAboutState.windowActive;
 
@@ -601,19 +614,25 @@ int main(int argc, char *argv[])
             params[slotActive].sustainTimeValue = GuiSliderBar((Rectangle){ 246, 54, 100, 10 }, "SUSTAIN TIME", TextFormat("%.2f", params[slotActive].sustainTimeValue), params[slotActive].sustainTimeValue, 0, 1);
             params[slotActive].sustainPunchValue = GuiSliderBar((Rectangle){ 246, 70, 100, 10 }, "SUSTAIN PUNCH", TextFormat("%.2f", params[slotActive].sustainPunchValue), params[slotActive].sustainPunchValue, 0, 1);
             params[slotActive].decayTimeValue = GuiSliderBar((Rectangle){ 246, 87, 100, 10 }, "DECAY TIME", TextFormat("%.2f", params[slotActive].decayTimeValue), params[slotActive].decayTimeValue, 0, 1);
+
             params[slotActive].startFrequencyValue = GuiSliderBar((Rectangle){ 246, 107, 100, 10 }, "START FREQUENCY", TextFormat("%.2f", params[slotActive].startFrequencyValue), params[slotActive].startFrequencyValue, 0, 1);
             params[slotActive].minFrequencyValue = GuiSliderBar((Rectangle){ 246, 124, 100, 10 }, "MIN FREQUENCY", TextFormat("%.2f", params[slotActive].minFrequencyValue), params[slotActive].minFrequencyValue, 0, 1);
             params[slotActive].slideValue = GuiSliderBar((Rectangle){ 246, 140, 100, 10 }, "SLIDE", TextFormat("%.2f", params[slotActive].slideValue), params[slotActive].slideValue, -1, 1);
             params[slotActive].deltaSlideValue = GuiSliderBar((Rectangle){ 246, 157, 100, 10 }, "DELTA SLIDE", TextFormat("%.2f", params[slotActive].deltaSlideValue), params[slotActive].deltaSlideValue, -1, 1);
             params[slotActive].vibratoDepthValue = GuiSliderBar((Rectangle){ 246, 173, 100, 10 }, "VIBRATO DEPTH", TextFormat("%.2f", params[slotActive].vibratoDepthValue), params[slotActive].vibratoDepthValue, 0, 1);
             params[slotActive].vibratoSpeedValue = GuiSliderBar((Rectangle){ 246, 189, 100, 10 }, "VIBRATO SPEED", TextFormat("%.2f", params[slotActive].vibratoSpeedValue), params[slotActive].vibratoSpeedValue, 0, 1);
+            
             params[slotActive].changeAmountValue = GuiSliderBar((Rectangle){ 246, 209, 100, 10 }, "CHANGE AMOUNT", TextFormat("%.2f", params[slotActive].changeAmountValue), params[slotActive].changeAmountValue, -1, 1);
             params[slotActive].changeSpeedValue = GuiSliderBar((Rectangle){ 246, 225, 100, 10 }, "CHANGE SPEED", TextFormat("%.2f", params[slotActive].changeSpeedValue), params[slotActive].changeSpeedValue, 0, 1);
+
             params[slotActive].squareDutyValue = GuiSliderBar((Rectangle){ 246, 245, 100, 10 }, "SQUARE DUTY", TextFormat("%.2f", params[slotActive].squareDutyValue), params[slotActive].squareDutyValue, 0, 1);
             params[slotActive].dutySweepValue = GuiSliderBar((Rectangle){ 246, 261, 100, 10 }, "DUTY SWEEP", TextFormat("%.2f", params[slotActive].dutySweepValue), params[slotActive].dutySweepValue, -1, 1);
+
             params[slotActive].repeatSpeedValue = GuiSliderBar((Rectangle){ 246, 281, 100, 10 }, "REPEAT SPEED", TextFormat("%.2f", params[slotActive].repeatSpeedValue), params[slotActive].repeatSpeedValue, 0, 1);
+
             params[slotActive].phaserOffsetValue = GuiSliderBar((Rectangle){ 246, 304, 100, 10 }, "PHASER OFFSET", TextFormat("%.2f", params[slotActive].phaserOffsetValue), params[slotActive].phaserOffsetValue, -1, 1);
             params[slotActive].phaserSweepValue = GuiSliderBar((Rectangle){ 246, 320, 100, 10 }, "PHASER SWEEP", TextFormat("%.2f", params[slotActive].phaserSweepValue), params[slotActive].phaserSweepValue, -1, 1);
+            
             params[slotActive].lpfCutoffValue = GuiSliderBar((Rectangle){ 246, 340, 100, 10 }, "LPF CUTOFF", TextFormat("%.2f", params[slotActive].lpfCutoffValue), params[slotActive].lpfCutoffValue, 0, 1);
             params[slotActive].lpfCutoffSweepValue = GuiSliderBar((Rectangle){ 246, 356, 100, 10 }, "LPF CUTOFF SWEEP", TextFormat("%.2f", params[slotActive].lpfCutoffSweepValue), params[slotActive].lpfCutoffSweepValue, -1, 1);
             params[slotActive].lpfResonanceValue = GuiSliderBar((Rectangle){ 246, 372, 100, 10 }, "LPF RESONANCE", TextFormat("%.2f", params[slotActive].lpfResonanceValue), params[slotActive].lpfResonanceValue, 0, 1);
@@ -1863,6 +1882,97 @@ static void WaveMutate(WaveParams *params)
 //--------------------------------------------------------------------------------------------
 // Auxiliar functions
 //--------------------------------------------------------------------------------------------
+
+static void CopyWaveParams(WaveParams *params)
+{
+    SetClipboardText(TextFormat("{ %d, %d, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff }",
+                                params->randSeed, params->waveTypeValue,
+
+                                // Wave envelope parameters
+                                params->attackTimeValue,
+                                params->sustainTimeValue,
+                                params->sustainPunchValue,
+                                params->decayTimeValue,
+
+                                // Frequency parameters
+                                params->startFrequencyValue,
+                                params->minFrequencyValue,
+                                params->slideValue,
+                                params->deltaSlideValue,
+                                params->vibratoDepthValue,
+                                params->vibratoSpeedValue,
+                                // float vibratoPhaseDelayValue;
+
+                                // Tone change parameters
+                                params->changeAmountValue,
+                                params->changeSpeedValue,
+
+                                // Square wave parameters
+                                params->squareDutyValue,
+                                params->dutySweepValue,
+
+                                // Repeat parameters
+                                params->repeatSpeedValue,
+
+                                // Phaser parameters
+                                params->phaserOffsetValue,
+                                params->phaserSweepValue,
+
+                                // Filter parameters
+                                params->lpfCutoffValue,
+                                params->lpfCutoffSweepValue,
+                                params->lpfResonanceValue,
+                                params->hpfCutoffValue,
+                                params->hpfCutoffSweepValue));
+
+}
+
+static void PasteWaveParams(WaveParams *params)
+{
+    const char* clip = GetClipboardText();
+    if(clip) {
+        sscanf(clip, "{ %d, %d, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff, %ff }",
+                &params->randSeed,
+                &params->waveTypeValue,
+
+                // Wave envelope parameters
+                &params->attackTimeValue,
+                &params->sustainTimeValue,
+                &params->sustainPunchValue,
+                &params->decayTimeValue,
+
+                // Frequency parameters
+                &params->startFrequencyValue,
+                &params->minFrequencyValue,
+                &params->slideValue,
+                &params->deltaSlideValue,
+                &params->vibratoDepthValue,
+                &params->vibratoSpeedValue,
+                // float vibratoPhaseDelayValue;
+
+                // Tone change parameters
+                &params->changeAmountValue,
+                &params->changeSpeedValue,
+
+                // Square wave parameters
+                &params->squareDutyValue,
+                &params->dutySweepValue,
+
+                // Repeat parameters
+                &params->repeatSpeedValue,
+
+                // Phaser parameters
+                &params->phaserOffsetValue,
+                &params->phaserSweepValue,
+
+                // Filter parameters
+                &params->lpfCutoffValue,
+                &params->lpfCutoffSweepValue,
+                &params->lpfResonanceValue,
+                &params->hpfCutoffValue,
+                &params->hpfCutoffSweepValue);
+    }
+}
 
 static int RFXGetRandomValue(int min, int max)
 {

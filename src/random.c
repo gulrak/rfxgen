@@ -1,11 +1,15 @@
 #include "random.h"
 
+//-----------------------------------------------------------------------------
+// Based on splitmix64 public domain code by Sebastiano Vigna (vigna@acm.org), 2015
+// and xoroshiro128++ 1.0 public domain code by David Blackman and Sebastiano Vigna (vigna@acm.org), 2019
+//-----------------------------------------------------------------------------
+
+static uint64_t s[2];
+
 static inline uint64_t rotl(const uint64_t x, int k) {
 	return (x << k) | (x >> (64 - k));
 }
-
-
-static uint64_t s[2];
 
 static uint64_t splitmix64(uint64_t* seed) {
 	uint64_t z = (*seed += UINT64_C(0x9E3779B97F4A7C15));
